@@ -87,7 +87,7 @@ CREATE TABLE `comments` (
 INSERT INTO users (fullname, email, password, date, occupation, gender)
 VALUES ('Juan Pérez', 'juan@example.com', 'clave123', '2023-01-01 10:00:00', 'Desarrollador', 'Masculino'),
        ('María García', 'maria@example.com', 'contraseña456', '2023-01-02 11:00:00', 'Diseñadora', 'Femenino'),
-       ('Carlos López', 'carlos@example.com', '123456', '2023-01-03 12:00:00', 'Estudiante', 'Masculino');
+       ('Carlos López', 'carlos@example.com', '123456', '2023-01-03 12:00:00', 'Desarrollador', 'Masculino');
 
 INSERT INTO posts (userid, date, content, likes)
 VALUES (1, '2023-01-01 13:00:00', 'Este es mi primer post', 10),
