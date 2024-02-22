@@ -116,16 +116,15 @@ VALUES (2, 1, '¡Qué buen post!', '2023-01-01 16:00:00'),
        (1, 3, '¡Excelente trabajo!', '2023-01-03 18:00:00');
 
 
--- TRIGGERS
+DELIMITER $$
 
-  -- LIKES
--- CADA VEZ QUE SE GENERA UN LIKE, SOBRE EL POST SE ACTUALIZA EL CAMPO LIKES  
+-- TRIGGER 1: likes_BEFORE_INSERT
 CREATE DEFINER=`root`@`localhost` TRIGGER `likes_BEFORE_INSERT` BEFORE INSERT ON `likes` FOR EACH ROW BEGIN
-SET NEW.date = NOW();
-  UPDATE posts SET likes = likes + 1 WHERE postid = NEW.postid;
-END
+    SET NEW.date = NOW();
+    UPDATE posts SET likes = likes + 1 WHERE postid = NEW.postid;
+END$$
 
--- VERIFICA SI TIENE LIKES EN EL POST
+-- TRIGGER 2: hasInserted_BEFORE_INSERT
 CREATE DEFINER=`root`@`localhost` TRIGGER `hasInserted_BEFORE_INSERT` BEFORE INSERT ON `likes` FOR EACH ROW BEGIN
     DECLARE likes_count INT;
     DECLARE hasLikes BOOLEAN;
@@ -139,9 +138,9 @@ CREATE DEFINER=`root`@`localhost` TRIGGER `hasInserted_BEFORE_INSERT` BEFORE INS
     ELSE 
         SET hasLikes = FALSE;
     END IF;
-END
+END$$
 
--- EL POST NO DEBERÍA PODER TENER MAS LIKES QUE USUARIOS EN LA RED SOCIAL
+-- TRIGGER 3: calculateLikes_BEFORE_INSERT
 CREATE DEFINER=`root`@`localhost` TRIGGER `calculateLikes_BEFORE_INSERT` BEFORE INSERT ON `likes` FOR EACH ROW BEGIN
     DECLARE total_likes INT;
     DECLARE total_users INT;
@@ -157,7 +156,9 @@ CREATE DEFINER=`root`@`localhost` TRIGGER `calculateLikes_BEFORE_INSERT` BEFORE 
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'No se pueden agregar más likes. La cantidad de likes ya ha alcanzado la cantidad de usuarios disponibles';
     END IF;
-END
+END$$
+
+DELIMITER ;
 
 
   -- VIEWS
@@ -184,7 +185,7 @@ VIEW `vista_actividadreciente` AS
         ((`posts` `p`
         LEFT JOIN `comments` `c` ON ((`p`.`postid` = `c`.`postid`)))
         LEFT JOIN `likes` `l` ON ((`p`.`postid` = `l`.`postid`)))
-    ORDER BY `p`.`date` DESC
+    ORDER BY `p`.`date` DESC;
 
 -- AMIGOS EN COMUN
 CREATE 
@@ -197,7 +198,7 @@ VIEW `vista_amigosencomun` AS
     FROM
         (`friends` `a1`
         JOIN `friends` `a2` ON (((`a1`.`userid` <> `a2`.`userid`)
-            AND (`a1`.`userid2` = `a2`.`userid`))))
+            AND (`a1`.`userid2` = `a2`.`userid`))));
 
 -- ESTADISTICAS DE USUARIOS
 CREATE 
@@ -216,7 +217,7 @@ VIEW `vista_estadisticasusuario` AS
         LEFT JOIN `posts` `p` ON ((`u`.`userid` = `p`.`userid`)))
         LEFT JOIN `comments` `c` ON ((`u`.`userid` = `c`.`userid`)))
         LEFT JOIN `likes` `l` ON ((`u`.`userid` = `l`.`userid`)))
-    GROUP BY `u`.`userid` , `u`.`fullname`
+    GROUP BY `u`.`userid` , `u`.`fullname`;
 
 -- PUBLICACIONES POPULARES
 CREATE 
@@ -234,7 +235,7 @@ VIEW `vista_publicacionespopulares` AS
         (`posts` `p`
         LEFT JOIN `likes` `l` ON ((`p`.`postid` = `l`.`postid`)))
     GROUP BY `p`.`postid`
-    ORDER BY `CantidadLikes` DESC
+    ORDER BY `CantidadLikes` DESC;
 
 -- USUARIOS CON MISMA OCUPACIÓN
 CREATE 
@@ -252,36 +253,41 @@ VIEW `vista_usuariosmismaocupacion` AS
         (`users` `u1`
         JOIN `users` `u2` ON (((`u1`.`occupation` = `u2`.`occupation`)
             AND (`u1`.`userid` <> `u2`.`userid`))))
-    ORDER BY `u1`.`occupation` , `u1`.`userid` , `u2`.`userid`
+    ORDER BY `u1`.`occupation` , `u1`.`userid` , `u2`.`userid`;
 
     -- FUNCIONES
-  -- FUNCIÓN DE OBTENCIÓN DE RELACIONES / AMIGOS EN BASE AL USER ID 
+  -- FUNCIÓN 1: ObtenerCantidadAmigos
+    DELIMITER $$
 CREATE DEFINER=`root`@`localhost` FUNCTION `ObtenerCantidadAmigos`(userid_param INT) RETURNS int
     DETERMINISTIC
 BEGIN
     DECLARE cantidad_amigos INT;
     SELECT COUNT(*) INTO cantidad_amigos FROM friends WHERE userid = userid_param OR userid2 = userid_param;
     RETURN cantidad_amigos;
-END
+END$$
 
-  -- FUNCIÓN DE OBTENCIÓN DE COMENTARIOS EN BASE AL USER ID
+-- FUNCIÓN 2: ObtenerTotalComentarios
 CREATE DEFINER=`root`@`localhost` FUNCTION `ObtenerTotalComentarios`(userid_param INT) RETURNS int
     DETERMINISTIC
 BEGIN
     DECLARE total_comments INT;
     SELECT COUNT(*) INTO total_comments FROM comments WHERE userid = userid_param;
     RETURN total_comments;
-END
+END$$
+
+DELIMITER ;
 
       -- STORED PROCEDURES
     -- PROCEDIMIENTO PARA ACEPTAR UNA RELACIÓN / AMISTAD
+	DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `AgregarAmistad`(IN usuario1 INT, IN usuario2 INT)
 BEGIN
     INSERT INTO friends (userid, userid2, state, friendshipdate) VALUES (usuario1, usuario2, 'Aceptado', NOW());
-END
+END$$
 
     -- PROCEDIMIENTO PARA MARCAR COMO LEÍDA UNA NOTIFICACIÓN
 CREATE DEFINER=`root`@`localhost` PROCEDURE `MarcarNotificacionComoLeida`(IN notif_id INT)
 BEGIN
     UPDATE notifications SET `read` = 1 WHERE notificationid = notif_id;
-END
+END$$
+DELIMITER ;
