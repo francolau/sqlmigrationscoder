@@ -291,3 +291,67 @@ BEGIN
     UPDATE notifications SET `read` = 1 WHERE notificationid = notif_id;
 END$$
 DELIMITER ;
+
+
+--  INFORMES
+
+        -- Informe de actividad --
+-- SELECT 
+--     u.userid,
+--     u.fullname,
+--     COUNT(DISTINCT CASE WHEN l.userid IS NOT NULL THEN l.likeid END) AS total_user_likes,
+--     COUNT(DISTINCT CASE WHEN c.userid IS NOT NULL THEN c.commentid END) AS total_user_comentarios,
+--     COUNT(DISTINCT CASE WHEN p.userid IS NOT NULL THEN p.postid END) AS total_user_publicaciones,
+--     totals.total_likes AS total_likes,
+--     totals.total_comentarios AS total_comentarios,
+--     totals.total_publicaciones AS total_publicaciones
+-- FROM 
+--     users u
+-- LEFT JOIN 
+--     likes l ON u.userid = l.userid
+-- LEFT JOIN 
+--     comments c ON u.userid = c.userid
+-- LEFT JOIN 
+--     posts p ON u.userid = p.userid
+-- CROSS JOIN (
+--     SELECT 
+--         COUNT(DISTINCT likes.likeid) AS total_likes,
+--         COUNT(DISTINCT comments.commentid) AS total_comentarios,
+--         COUNT(DISTINCT posts.postid) AS total_publicaciones
+--     FROM 
+--         likes, comments, posts
+-- ) AS totals
+-- GROUP BY 
+--     u.userid, u.fullname, totals.total_likes, totals.total_comentarios, totals.total_publicaciones
+-- ORDER BY 
+--     total_user_likes DESC, total_user_comentarios DESC, total_user_publicaciones DESC
+-- LIMIT 10;
+
+        -- Interacciones usuarios --
+-- SELECT p.postid, p.content, 
+-- COUNT(DISTINCT CASE WHEN l.userid IS NOT NULL THEN l.likeid END) AS total_likes,
+-- COUNT(DISTINCT CASE WHEN l.userid IS NOT NULL THEN c.commentid END) AS total_comentarios,
+-- COUNT(DISTINCT CASE WHEN l.userid IS NOT NULL THEN c.commentid END) + COUNT(DISTINCT CASE WHEN l.userid IS NOT NULL THEN l.likeid END) as total_interacciones
+-- FROM posts p
+-- LEFT JOIN comments c ON p.postid = c.postid
+-- LEFT JOIN likes l ON p.postid = l.postid
+-- GROUP BY p.postid, p.content
+-- ORDER BY total_comentarios DESC, total_likes DESC
+-- LIMIT 10;
+
+
+        -- Popularidad usuarios --
+-- SELECT 
+--     u.userid,
+--     u.fullname,
+--     COUNT(*) AS total_amigos,
+--     ROUND((count(*) / ((SELECT COUNT(*) FROM friends) * 2) * 100), 2) AS Porcentaje_Popularidad
+-- FROM (
+--     SELECT userid FROM friends
+--     UNION ALL
+--     SELECT userid2 FROM friends
+-- ) AS amigos
+-- INNER JOIN users u ON amigos.userid = u.userid
+-- GROUP BY u.userid, u.fullname
+-- ORDER BY total_amigos DESC
+-- LIMIT 10;
